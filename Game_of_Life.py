@@ -14,9 +14,9 @@ def update(frame_num, img, grid, rows, cols, text):
     if frame_num >= 1000:
         ani.event_source.stop()  # Stop the animation
         return img, text
-    
+
     # Log alive and dead cells every 100 generations
-    if frame_num % 100 == 0:  # Log every 100 generations
+    if frame_num % 100 == 0 and frame_num !=0:  # Log every 100 generations
         alive_cells = np.sum(grid)  # Count alive cells (1s)
         dead_cells = grid.size - alive_cells  # Count dead cells (0s)
         print(f"Generation {frame_num}: Alive cells = {alive_cells}, Dead cells = {dead_cells}")
@@ -58,7 +58,7 @@ text = ax.text(0.02, 0.95, "", transform=ax.transAxes, color="red", fontsize=12)
 
 # Create the animation
 ani = animation.FuncAnimation(
-    fig, update, fargs=(img, grid, rows, cols, text), frames=1000, interval=50
+    fig, update, fargs=(img, grid, rows, cols, text), frames=1000, interval=50, repeat=False
 )
 
 # Display the animation
