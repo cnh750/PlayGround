@@ -10,16 +10,38 @@ grid = np.random.choice([0, 1], size=(rows, cols), p=[0.90, 0.10])
 
 # Function to update the grid for each generation
 def update(frame_num, img, grid, rows, cols, text):
-    # Stop the animation after 1000 generations
-    if frame_num >= 1000:
+    global previous_grid  # Store the previous grid for calculations
+
+    # Stop the animation after 1750 generations
+    if frame_num >= 1750:
         ani.event_source.stop()  # Stop the animation
         return img, text
 
-    # Log alive and dead cells every 100 generations
-    if frame_num % 100 == 0 and frame_num !=0:  # Log every 100 generations
+    # Log statistics every 100 generations (skip initialization call)
+    if frame_num % 100 == 0 and frame_num != 0:  # Skip frame_num = 0
         alive_cells = np.sum(grid)  # Count alive cells (1s)
         dead_cells = grid.size - alive_cells  # Count dead cells (0s)
-        print(f"Generation {frame_num}: Alive cells = {alive_cells}, Dead cells = {dead_cells}")
+
+        # Calculate born and died cells
+        born_cells = np.sum((previous_grid == 0) & (grid == 1))  # Dead -> Alive
+        died_cells = np.sum((previous_grid == 1) & (grid == 0))  # Alive -> Dead
+
+        # Calculate stability index
+        stability_index = np.sum(grid != previous_grid) / grid.size
+
+        # Calculate density of alive cells
+        density = (alive_cells / grid.size) * 100
+
+        # Print statistics
+        print(
+            f"Generation {frame_num}: "
+            f"Alive = {alive_cells}, Dead = {dead_cells}, "
+            f"Born = {born_cells}, Died = {died_cells}, "
+            f"Stability = {stability_index:.2f}, Density = {density:.2f}%"
+        )
+
+    # Update the previous grid
+    previous_grid = grid.copy()
 
     new_grid = grid.copy()
     for i in range(rows):
@@ -56,9 +78,12 @@ img = ax.imshow(grid, interpolation="nearest", cmap="binary")
 # Add a text annotation for the generation number
 text = ax.text(0.02, 0.95, "", transform=ax.transAxes, color="red", fontsize=12)
 
+# Initialize the previous grid
+previous_grid = grid.copy()
+
 # Create the animation
 ani = animation.FuncAnimation(
-    fig, update, fargs=(img, grid, rows, cols, text), frames=1000, interval=50, repeat=False
+    fig, update, fargs=(img, grid, rows, cols, text), frames=1750, interval=50, repeat=False
 )
 
 # Display the animation
