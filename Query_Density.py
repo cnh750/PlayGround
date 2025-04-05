@@ -3,66 +3,69 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 
-def get_density_data():
-    """Query density values from the database"""
+
+def get_db_connection():
+    """Reusable database connection setup"""
     db_directory = os.getenv("GAME_OF_LIFE_DB")
     if not db_directory:
         raise ValueError("Environment variable GAME_OF_LIFE_DB is not set.")
     db_path = os.path.join(db_directory, "game_of_life.db")
+    return sqlite3.connect(db_path)
 
-    with sqlite3.connect(db_path) as conn:
+def get_density_by_probability():
+    """Returns a dictionary of {probability: [density_values]}"""
+    with get_db_connection() as conn:
         cursor = conn.cursor()
         
-        # Get all density values
-        cursor.execute("SELECT density FROM generations WHERE density IS NOT NULL")
-        density_values = [row[0] for row in cursor.fetchall()]
+        # Get all probabilities in the database
+        cursor.execute("SELECT DISTINCT probability_of_life FROM generations")
+        probabilities = [row[0] for row in cursor.fetchall()]
         
-        # Get sample data for plot title
-        cursor.execute("""
-            SELECT alive_cells, grid_size 
-            FROM generations 
-            WHERE density IS NOT NULL 
-            LIMIT 1
-        """)
-        sample = cursor.fetchone()
-        
-    return density_values, sample
+        # Get densities grouped by probability
+        density_groups = {}
+        for prob in probabilities:
+            cursor.execute(
+                "SELECT density FROM generations WHERE probability_of_life = ? AND density IS NOT NULL",
+                (prob,)
+            )
+            density_groups[prob] = [row[0] for row in cursor.fetchall()]
+            
+        return density_groups
 
-def plot_density_histogram(density_values, sample):
-    """Create and display density histogram"""
-    if not density_values:
-        print("No density data found in the database!")
-        return
+def plot_comparison_histogram(density_groups):
+    plt.figure(figsize=(12, 6))
     
-    # Calculate grid size for title
-    alive_cells, grid_size = sample if sample else (0, "100x100")
-    grid_width, grid_height = map(int, grid_size.split('x'))
-    total_cells = grid_width * grid_height
+    # Plot histograms for each probability group
+    colors = ['skyblue', 'salmon', 'lightgreen']  # Different colors for each group
+    for i, (prob, densities) in enumerate(density_groups.items()):
+        plt.hist(
+            densities,
+            bins=20,
+            alpha=0.6,
+            color=colors[i % len(colors)],
+            edgecolor='black',
+            label=f'{int(prob*100)}% Initial Alive'
+        )
     
-    plt.figure(figsize=(10, 6))
-    plt.hist(density_values, bins=20, color='skyblue', 
-             edgecolor='black', alpha=0.7)
-    
-    title = (f'Distribution of Cell Density (Alive Cells/Total Cells)\n'
-             f'Sample: {alive_cells}/{total_cells} = {density_values[0]:.2f}%')
-    plt.title(title)
+    plt.title('Density Distribution by Initial Probability of Life')
     plt.xlabel('Density (%)')
     plt.ylabel('Frequency')
-    plt.grid(axis='y', alpha=0.75)
-    
-    # Add statistical markers
-    mean_density = np.mean(density_values)
-    median_density = np.median(density_values)
-    plt.axvline(mean_density, color='red', linestyle='dashed', 
-                linewidth=1, label=f'Mean: {mean_density:.2f}%')
-    plt.axvline(median_density, color='green', linestyle='dashed', 
-                linewidth=1, label=f'Median: {median_density:.2f}%')
     plt.legend()
+    plt.grid(axis='y', alpha=0.3)
+    
+    # Add mean markers
+    for prob, densities in density_groups.items():
+        plt.axvline(
+            x=np.mean(densities),
+            color=colors[list(density_groups.keys()).index(prob) % len(colors)],
+            linestyle='--',
+            linewidth=1
+        )
     
     plt.tight_layout()
-    plt.savefig('density_histogram.png', dpi=300)
+    plt.savefig('density_by_probability.png', dpi=300)
     plt.show()
 
 if __name__ == "__main__":
-    density_values, sample = get_density_data()
-    plot_density_histogram(density_values, sample)
+    density_groups = get_density_by_probability()
+    plot_comparison_histogram(density_groups)
