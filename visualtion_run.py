@@ -11,11 +11,17 @@ def animate_run(rows=100, cols=150, prob_of_life=0.1, generations=1000):
     def update(frame):
         nonlocal grid
         grid = update_grid(grid)
-        img.set_data(grid)
-        return img
+        img.set_array(grid)  # Update the image data
+        return [img]  # Must return a sequence of Artists
     
-    ani = animation.FuncAnimation(fig, update, frames=generations, interval=50, blit=True)
+    ani = animation.FuncAnimation(
+        fig, 
+        update, 
+        frames=generations, 
+        interval=50, 
+        blit=True
+    )
     plt.show()
 
 if __name__ == "__main__":
-    animate_run(prob_of_life=0.25)  # Example: Watch one run at 25%
+    animate_run(prob_of_life=0.25)

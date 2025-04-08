@@ -12,42 +12,50 @@ if not db_directory:
 db_path = os.path.join(db_directory, "game_of_life.db")
 
 # Function to import data from a .csv file into the database
-def import_csv_to_db(csv_filename):
-    # Connect to the SQLite database
+def import_csv_to_db(csv_path):
+    """Import CSV data to SQLite database with proper error handling."""
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
-
-    # Open the .csv file
-    with open(csv_filename, mode="r") as file:
-        reader = csv.reader(file)
-        header = next(reader)  # Skip the header row
-
-        # Insert each row into the database
+    
+    with open(csv_path, 'r') as csvfile:
+        reader = csv.reader(csvfile)
+        headers = next(reader)  # Skip header row
+        
         for row in reader:
-            # Skip metadata rows (rows with empty generation values)
-            if row[4]:  # Check if the "Generation" column is not empty
+            try:
+                # Validate row has enough columns
+                if len(row) < 11:  # Your schema requires 11 columns
+                    print(f"Skipping incomplete row: {row}")
+                    continue
+                    
+                # Convert empty strings to None for database
+                processed_row = [
+                    value if value.strip() else None 
+                    for value in row
+                ]
+                
                 cursor.execute("""
-                INSERT INTO generations (
-                    run_id, grid_size, probability_of_life, total_generations,
-                    generation, alive_cells, dead_cells, born_cells, died_cells,
-                    stability_index, density
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """, row)
-
-    # Commit the changes and close the connection
+                    INSERT INTO generations 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, processed_row)
+                
+            except Exception as e:
+                print(f"Error processing row {row}: {str(e)}")
+                continue
+    
     conn.commit()
     conn.close()
-    print(f"Data from {csv_filename} has been imported into the database.")
+    print(f"Successfully imported {csv_path}")
 
     # Option 1: Delete the .csv file after processing
     # os.remove(csv_filename)
     # print(f"Deleted {csv_filename}")
 
     # Option 2: Move the .csv file to a new folder after processing
-    processed_dir = os.path.join(os.path.dirname(csv_filename), "processed")
+    processed_dir = os.path.join(os.path.dirname(csv_path), "processed")
     os.makedirs(processed_dir, exist_ok=True)  # Create the "processed" folder if it doesn't exist
-    shutil.move(csv_filename, os.path.join(processed_dir, os.path.basename(csv_filename)))
-    print(f"Moved {csv_filename} to {processed_dir}")
+    shutil.move(csv_path, os.path.join(processed_dir, os.path.basename(csv_path)))
+    print(f"Moved {csv_path} to {processed_dir}")
 
 # Function to process all .csv files in the directory
 def process_all_csv_files(directory="."):

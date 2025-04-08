@@ -8,7 +8,7 @@ from datetime import datetime
 rows, cols = 100, 150
 
 # Probability of life
-probability_of_life = 0.10
+probability_of_life = 0.25
 
 # Initialize the grid with random states
 grid = np.random.choice([0, 1], size=(rows, cols), p=[1 - probability_of_life, probability_of_life])

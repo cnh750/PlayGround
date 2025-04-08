@@ -30,7 +30,7 @@ def get_density_by_probability():
             )
             density_groups[prob] = [row[0] for row in cursor.fetchall()]
             
-        return density_groups
+        return density_groups, probabilities
 
 def plot_comparison_histogram(density_groups):
     plt.figure(figsize=(12, 6))
@@ -67,5 +67,6 @@ def plot_comparison_histogram(density_groups):
     plt.show()
 
 if __name__ == "__main__":
-    density_groups = get_density_by_probability()
+    density_groups, proabilities = get_density_by_probability()
+    print(proabilities)
     plot_comparison_histogram(density_groups)
