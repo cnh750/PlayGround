@@ -3,12 +3,13 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import csv
 from datetime import datetime
+from game_of_life_core import get_prob_of_life
+
+# Probability of life
+probability_of_life = get_prob_of_life()
 
 # Grid size
 rows, cols = 100, 150
-
-# Probability of life
-probability_of_life = 0.25
 
 # Initialize the grid with random states
 grid = np.random.choice([0, 1], size=(rows, cols), p=[1 - probability_of_life, probability_of_life])
